@@ -1,14 +1,22 @@
 import React, { useState } from "react";
 import { ethers } from "ethers";
 import { connectWallet, getContract } from "../utils/ethereum";
+import wethAbi from "../abis/WETH9.json";
+import uniswapV2Router02Abi from "../abis/UniswapV2Router02.json"; // ABI для UniswapV2Router02
 
-const SwapTokens = () => {
+interface SwapTokensProps {
+  token1Address: string;
+  token2Address: string;
+  uniswapV2Router02Address: string;
+}
+
+const SwapTokens: React.FC<SwapTokensProps> = ({ token1Address, token2Address, uniswapV2Router02Address }) => {
   const [amountToken, setAmountToken] = useState<number>(0);
   const [account, setAccount] = useState<string | null>(null);
 
   // Подключение кошелька
   const connect = async () => {
-    const { accounts, signer } = await connectWallet();
+    const { accounts } = await connectWallet();
     setAccount(accounts[0]);
   };
 
@@ -19,23 +27,28 @@ const SwapTokens = () => {
       return;
     }
 
-    const token1Address = "0x..."; // Адрес токена
-    const token2Address = "0x..."; // Адрес токена
-    const dexAddress = "0x..."; // Адрес контракта DEX
+    const token1Contract = getContract(token1Address, wethAbi);
+    const uniswapV2Router02Contract = getContract(uniswapV2Router02Address, uniswapV2Router02Abi);
 
-    const token1Contract = getContract(token1Address, erc20Abi);
-    const token2Contract = getContract(token2Address, erc20Abi);
-    const dexContract = getContract(dexAddress, dexAbi);
-
+    if (typeof window.ethereum === "undefined") {
+      alert("Пожалуйста, установите Metamask!");
+      throw new Error("Ethereum провайдер не найден.");
+    }
+    const provider = new ethers.providers.Web3Provider(window.ethereum!);
     const signer = provider.getSigner();
     const token1WithSigner = token1Contract.connect(signer);
-    const token2WithSigner = token2Contract.connect(signer);
-    const dexWithSigner = dexContract.connect(signer);
+    const uniswapV2Router02WithSigner = uniswapV2Router02Contract.connect(signer);
 
-    await token1WithSigner.approve(dexAddress, ethers.utils.parseUnits(amountToken.toString(), 18));
+    // Даем разрешение Uniswap на использование токенов
+    await token1WithSigner.approve(uniswapV2Router02Address, ethers.utils.parseUnits(amountToken.toString(), 18));
 
-    await dexWithSigner.swapTokens(
-      ethers.utils.parseUnits(amountToken.toString(), 18),
+    // Вызов метода обмена токенов
+    await uniswapV2Router02WithSigner.swapExactTokensForTokens(
+      ethers.utils.parseUnits(amountToken.toString(), 18), // Сумма токенов для обмена
+      0, // Минимальное количество токенов, которое мы получим (можно использовать slippage)
+      [token1Address, token2Address], // Массив адресов токенов, от и до
+      account, // Адрес получателя
+      Math.floor(Date.now() / 1000) + 60 * 10, // Время истечения транзакции (например, 10 минут)
       { gasLimit: 1000000 }
     );
 

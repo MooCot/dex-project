@@ -8,12 +8,24 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
-        {
-            version: "0.5.16", // Для контрактов с версией 0.5.16
+      {
+        version: "0.5.16", // Для контрактов с версией 0.5.16
+        settings: {
+          optimizer: {
+            enabled: true, // Включаем оптимизацию
+            runs: 200,     // Количество прогонов (настраивайте по нужде)
+          },
         },
-        {
-            version: "0.6.6", // Для контрактов с версией 0.6.6
+      },
+      {
+        version: "0.6.6", // Для контрактов с версией 0.6.6
+        settings: {
+          optimizer: {
+            enabled: true, // Включаем оптимизацию
+            runs: 200,     // Количество прогонов (настраивайте по нужде)
+          },
         },
+      },
     ],
   },
   networks: {
