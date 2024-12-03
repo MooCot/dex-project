@@ -23,7 +23,10 @@ const PoolDetails: React.FC<PoolDetailsProps> = ({
     const fetchPoolDetails = async () => {
       const { accounts } = await connectWallet();
       setAccount(accounts[0]);
-
+      if (typeof window.ethereum === "undefined") {
+        alert("Пожалуйста, установите Metamask!");
+        throw new Error("Ethereum провайдер не найден.");
+      }
       const provider = new ethers.providers.Web3Provider(window.ethereum!);
       const signer = provider.getSigner();
 

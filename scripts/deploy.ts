@@ -1,5 +1,6 @@
 import { ethers } from "hardhat";
 import * as fs from "fs";
+import * as path from "path";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -31,6 +32,17 @@ async function main() {
   await token.deployed();
   console.log("MyToken deployed at:", token.address);
 
+    // Создаем пару токенов (MyToken/WETH)
+    const pairTx = await factory.createPair(token.address, weth.address);
+    await pairTx.wait();
+    const pairAddress = await factory.getPair(token.address, weth.address);
+    console.log("Token/WETH Pair created at:", pairAddress);
+
+    const filePath = path.resolve(__dirname, "../artifacts/contracts/v5/UniswapV2Pair.sol/UniswapV2Pair.json");
+    const pairABI = JSON.parse(
+      fs.readFileSync(filePath, "utf8")
+    ).abi;
+  
   // Сохраняем ABI и адреса контрактов в JSON файлы
   const contracts = {
     WETH: {
@@ -48,14 +60,19 @@ async function main() {
     UniswapV2Router02: {
       address: router.address,
       abi: Router.interface.format(ethers.utils.FormatTypes.json)
-    }
+    },
+    UniswapV2Pair: {
+      address: pairAddress,
+      abi: pairABI,
+    },
   };
 
   // Записываем в файлы
-  fs.writeFileSync('./WETH.json', JSON.stringify(contracts.WETH, null, 2));
-  fs.writeFileSync('./ERC20.json', JSON.stringify(contracts.ERC20, null, 2));
-  fs.writeFileSync('./UniswapV2Factory.json', JSON.stringify(contracts.UniswapV2Factory, null, 2));
-  fs.writeFileSync('./UniswapV2Router02.json', JSON.stringify(contracts.UniswapV2Router02, null, 2));
+  fs.writeFileSync('./dex-frontend/src/abis/WETH.json', JSON.stringify(contracts.WETH, null, 2));
+  fs.writeFileSync('./dex-frontend/src/abis/ERC20.json', JSON.stringify(contracts.ERC20, null, 2));
+  fs.writeFileSync('./dex-frontend/src/abis/UniswapV2Factory.json', JSON.stringify(contracts.UniswapV2Factory, null, 2));
+  fs.writeFileSync('./dex-frontend/src/abis/UniswapV2Router02.json', JSON.stringify(contracts.UniswapV2Router02, null, 2));
+  fs.writeFileSync("./dex-frontend/src/abis/UniswapV2Pair.json", JSON.stringify(contracts.UniswapV2Pair, null, 2));
 }
 
 main().catch((error) => {

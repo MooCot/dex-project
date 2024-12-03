@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 
 // Подключаем провайдер (например, MetaMask)
-export const provider = new ethers.providers.Web3Provider(window.ethereum);
+export const provider = new ethers.providers.Web3Provider(window.ethereum!);
 
 // Функция для подключения кошелька
 export const connectWallet = async () => {
